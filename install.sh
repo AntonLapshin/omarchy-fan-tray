@@ -19,11 +19,12 @@ chmod +x "$REPO_DIR/fan_tray.py"
 echo "==> Installing icons into hicolor theme..."
 THEME_DIR="$HOME/.local/share/icons/hicolor/64x64/apps"
 mkdir -p "$THEME_DIR"
-cp -f "$REPO_DIR/icons/fan-ok.png" "$THEME_DIR/omarchy-fan-tray-ok.png"
-cp -f "$REPO_DIR/icons/fan-fail.png" "$THEME_DIR/omarchy-fan-tray-fail.png"
-cp -f "$REPO_DIR/icons/fan-alert.png" "$THEME_DIR/omarchy-fan-tray-alert.png"
-# Drop pre-rename names (omarchy-fan-ok/...) so nothing stale can resolve.
-rm -f "$THEME_DIR/omarchy-fan-ok.png" "$THEME_DIR/omarchy-fan-fail.png" "$THEME_DIR/omarchy-fan-alert.png"
+cp -f "$REPO_DIR/icons/fan-ok.png" "$THEME_DIR/omarchy-fan-ok.png"
+cp -f "$REPO_DIR/icons/fan-fail.png" "$THEME_DIR/omarchy-fan-fail.png"
+cp -f "$REPO_DIR/icons/fan-alert.png" "$THEME_DIR/omarchy-fan-alert.png"
+# Drop fixed names from earlier versions (runtime now uses content-hashed
+# names and cleans up after itself; this covers machines on old installs).
+rm -f "$THEME_DIR/omarchy-fan-tray-ok.png" "$THEME_DIR/omarchy-fan-tray-fail.png" "$THEME_DIR/omarchy-fan-tray-alert.png"
 gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
 
 echo "==> Installing systemd user service..."

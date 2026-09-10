@@ -33,39 +33,49 @@ ICON_ALERT = os.path.join(HERE, "icons", "fan-alert.png")
 
 # Icon files installed into the hicolor theme dir, referenced by ABSOLUTE path:
 # quickshell's tray renders absolute-path SNI icons reliably, while bare
-# theme names resolve unreliably. Filenames are versioned (…-tray-…) so a
-# redesign never reuses a string the shell may have cached.
+# theme names resolve unreliably. Installed filenames embed a content hash,
+# so any redesign is automatically a new name and never hits the shell's
+# image cache (same-path + new-bytes would render stale).
 THEME_DIR = os.path.expanduser("~/.local/share/icons/hicolor/64x64/apps")
-THEME_FILES = {
-    "ok": ("fan-ok.png", "omarchy-fan-tray-ok.png"),
-    "fail": ("fan-fail.png", "omarchy-fan-tray-fail.png"),
-    "alert": ("fan-alert.png", "omarchy-fan-tray-alert.png"),
+THEME_SRC = {
+    "ok": "fan-ok.png",
+    "fail": "fan-fail.png",
+    "alert": "fan-alert.png",
 }
 
 
 def ensure_theme_icons() -> dict[str, str]:
-    """Copy icons into the hicolor theme dir.
+    """Copy icons into the hicolor theme dir under content-hashed names.
 
     Returns {state: absolute icon path}. Falls back to the repo copies
-    if the theme dir is not writable.
+    if the theme dir is not writable. Removes stale hashed copies and
+    legacy fixed-name copies from earlier versions.
     """
     refs = {"ok": ICON_OK, "fail": ICON_FAIL, "alert": ICON_ALERT}
     try:
-        os.makedirs(THEME_DIR, exist_ok=True)
+        import fnmatch
+        import hashlib
         import shutil as _shutil
 
-        for state, (src_name, dst_name) in THEME_FILES.items():
+        os.makedirs(THEME_DIR, exist_ok=True)
+        paths: dict[str, str] = {}
+        for state, src_name in THEME_SRC.items():
             src = os.path.join(HERE, "icons", src_name)
-            dst = os.path.join(THEME_DIR, dst_name)
-            if os.path.exists(src) and (
-                not os.path.exists(dst)
-                or os.path.getsize(src) != os.path.getsize(dst)
-            ):
+            digest = hashlib.md5(open(src, "rb").read()).hexdigest()[:8]
+            dst = os.path.join(THEME_DIR, f"omarchy-fan-{digest}-{state}.png")
+            if not os.path.exists(dst):
                 _shutil.copyfile(src, dst)
-        # all three present -> use absolute theme paths
-        paths = {
-            s: os.path.join(THEME_DIR, dst) for s, (_, dst) in THEME_FILES.items()
-        }
+            paths[state] = dst
+        # cleanup: our namespace is omarchy-fan-*.png; drop anything outdated
+        wanted = set(paths.values())
+        for fname in os.listdir(THEME_DIR):
+            if fnmatch.fnmatch(fname, "omarchy-fan-*.png"):
+                full = os.path.join(THEME_DIR, fname)
+                if full not in wanted:
+                    try:
+                        os.remove(full)
+                    except OSError:
+                        pass
         if all(os.path.exists(p) for p in paths.values()):
             return paths
     except Exception:
