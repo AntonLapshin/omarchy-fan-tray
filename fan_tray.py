@@ -31,15 +31,11 @@ ICON_OK = os.path.join(HERE, "icons", "fan-ok.png")
 ICON_FAIL = os.path.join(HERE, "icons", "fan-fail.png")
 ICON_ALERT = os.path.join(HERE, "icons", "fan-alert.png")
 
-# Theme-installed names (preferred: resolves reliably in the quickshell
-# SystemTray; absolute file paths are the fallback).
+# Icon files installed into the hicolor theme dir, referenced by ABSOLUTE path:
+# quickshell's tray renders absolute-path SNI icons reliably, while bare
+# theme names resolve unreliably. Filenames are versioned (…-tray-…) so a
+# redesign never reuses a string the shell may have cached.
 THEME_DIR = os.path.expanduser("~/.local/share/icons/hicolor/64x64/apps")
-THEME_BASE = os.path.expanduser("~/.local/share/icons")
-THEME_NAMES = {
-    "ok": "omarchy-fan-tray-ok",
-    "fail": "omarchy-fan-tray-fail",
-    "alert": "omarchy-fan-tray-alert",
-}
 THEME_FILES = {
     "ok": ("fan-ok.png", "omarchy-fan-tray-ok.png"),
     "fail": ("fan-fail.png", "omarchy-fan-tray-fail.png"),
@@ -48,10 +44,10 @@ THEME_FILES = {
 
 
 def ensure_theme_icons() -> dict[str, str]:
-    """Copy icons into the hicolor theme so the tray resolves them by name.
+    """Copy icons into the hicolor theme dir.
 
-    Returns {state: icon_ref} where icon_ref is a theme name on success,
-    else the absolute PNG path fallback.
+    Returns {state: absolute icon path}. Falls back to the repo copies
+    if the theme dir is not writable.
     """
     refs = {"ok": ICON_OK, "fail": ICON_FAIL, "alert": ICON_ALERT}
     try:
@@ -66,12 +62,12 @@ def ensure_theme_icons() -> dict[str, str]:
                 or os.path.getsize(src) != os.path.getsize(dst)
             ):
                 _shutil.copyfile(src, dst)
-        # all three present -> use theme names
-        if all(
-            os.path.exists(os.path.join(THEME_DIR, dst))
-            for _, dst in THEME_FILES.values()
-        ):
-            return {s: THEME_NAMES[s] for s in THEME_NAMES}
+        # all three present -> use absolute theme paths
+        paths = {
+            s: os.path.join(THEME_DIR, dst) for s, (_, dst) in THEME_FILES.items()
+        }
+        if all(os.path.exists(p) for p in paths.values()):
+            return paths
     except Exception:
         pass
     return refs
@@ -209,11 +205,6 @@ def run_tray(args) -> int:
     )
     indicator.set_status(AppIndicator.IndicatorStatus.ACTIVE)
     indicator.set_title(APP_TITLE)
-    try:
-        # Lets the shell resolve the icon names above via the hicolor theme.
-        indicator.set_icon_theme_path(THEME_BASE)
-    except Exception:
-        pass
 
     menu = Gtk.Menu()
 
