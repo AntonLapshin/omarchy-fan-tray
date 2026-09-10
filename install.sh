@@ -19,9 +19,11 @@ chmod +x "$REPO_DIR/fan_tray.py"
 echo "==> Installing icons into hicolor theme..."
 THEME_DIR="$HOME/.local/share/icons/hicolor/64x64/apps"
 mkdir -p "$THEME_DIR"
-cp -f "$REPO_DIR/icons/fan-ok.png" "$THEME_DIR/omarchy-fan-ok.png"
-cp -f "$REPO_DIR/icons/fan-fail.png" "$THEME_DIR/omarchy-fan-fail.png"
-cp -f "$REPO_DIR/icons/fan-alert.png" "$THEME_DIR/omarchy-fan-alert.png"
+cp -f "$REPO_DIR/icons/fan-ok.png" "$THEME_DIR/omarchy-fan-tray-ok.png"
+cp -f "$REPO_DIR/icons/fan-fail.png" "$THEME_DIR/omarchy-fan-tray-fail.png"
+cp -f "$REPO_DIR/icons/fan-alert.png" "$THEME_DIR/omarchy-fan-tray-alert.png"
+# Drop pre-rename names (omarchy-fan-ok/...) so nothing stale can resolve.
+rm -f "$THEME_DIR/omarchy-fan-ok.png" "$THEME_DIR/omarchy-fan-fail.png" "$THEME_DIR/omarchy-fan-alert.png"
 gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
 
 echo "==> Installing systemd user service..."
@@ -30,7 +32,9 @@ mkdir -p "$HOME/.config/systemd/user"
 sed "s|%h/ws/omarchy-fan-tray|$REPO_DIR|" "$SERVICE_SRC" > "$SERVICE_DST.tmp"
 mv "$SERVICE_DST.tmp" "$SERVICE_DST"
 systemctl --user daemon-reload
-systemctl --user enable --now omarchy-fan-tray.service
+systemctl --user enable omarchy-fan-tray.service
+# restart (not just start) so config/code/icon changes always apply
+systemctl --user restart omarchy-fan-tray.service
 systemctl --user status omarchy-fan-tray.service --no-pager -l | head -n 15 || true
 
 echo "==> Removing legacy XDG autostart entry (systemd is the only launcher now)..."

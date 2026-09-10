@@ -36,14 +36,14 @@ ICON_ALERT = os.path.join(HERE, "icons", "fan-alert.png")
 THEME_DIR = os.path.expanduser("~/.local/share/icons/hicolor/64x64/apps")
 THEME_BASE = os.path.expanduser("~/.local/share/icons")
 THEME_NAMES = {
-    "ok": "omarchy-fan-ok",
-    "fail": "omarchy-fan-fail",
-    "alert": "omarchy-fan-alert",
+    "ok": "omarchy-fan-tray-ok",
+    "fail": "omarchy-fan-tray-fail",
+    "alert": "omarchy-fan-tray-alert",
 }
 THEME_FILES = {
-    "ok": ("fan-ok.png", "omarchy-fan-ok.png"),
-    "fail": ("fan-fail.png", "omarchy-fan-fail.png"),
-    "alert": ("fan-alert.png", "omarchy-fan-alert.png"),
+    "ok": ("fan-ok.png", "omarchy-fan-tray-ok.png"),
+    "fail": ("fan-fail.png", "omarchy-fan-tray-fail.png"),
+    "alert": ("fan-alert.png", "omarchy-fan-tray-alert.png"),
 }
 
 
