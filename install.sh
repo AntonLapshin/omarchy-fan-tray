@@ -16,6 +16,14 @@ command -v notify-send >/dev/null || echo "warning: notify-send not found, notif
 
 chmod +x "$REPO_DIR/fan_tray.py"
 
+echo "==> Installing icons into hicolor theme..."
+THEME_DIR="$HOME/.local/share/icons/hicolor/64x64/apps"
+mkdir -p "$THEME_DIR"
+cp -f "$REPO_DIR/icons/fan-ok.png" "$THEME_DIR/omarchy-fan-ok.png"
+cp -f "$REPO_DIR/icons/fan-fail.png" "$THEME_DIR/omarchy-fan-fail.png"
+cp -f "$REPO_DIR/icons/fan-alert.png" "$THEME_DIR/omarchy-fan-alert.png"
+gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
+
 echo "==> Installing systemd user service..."
 mkdir -p "$HOME/.config/systemd/user"
 # Rewrite ExecStart to this checkout location (service file ships with %h default).
@@ -28,6 +36,18 @@ systemctl --user status omarchy-fan-tray.service --no-pager -l | head -n 15 || t
 echo "==> Installing XDG autostart fallback..."
 mkdir -p "$HOME/.config/autostart"
 sed "s|/home/aurora/ws/omarchy-fan-tray|$REPO_DIR|" "$DESKTOP_SRC" > "$AUTOSTART_DST"
+
+echo "==> Pinning FAN icon so it is always visible (not in the hover drawer)..."
+python3 - <<'PY' || echo "warning: could not pin tray item — right-click the tray chevron and pin omarchy-fan-tray manually"
+import json
+p = "$HOME/.config/omarchy/shell.json".replace("$HOME", __import__("os").environ["HOME"])
+d = json.load(open(p))
+for e in d["bar"]["layout"]["right"]:
+    if isinstance(e, dict) and e.get("id") == "omarchy.tray":
+        e["pinned"] = ["omarchy-fan-tray"]
+json.dump(d, open(p, "w"), indent=2)
+print("tray pinned")
+PY
 
 echo ""
 echo "Done. A blue FAN icon should appear in the top tray (hover for RPMs)."

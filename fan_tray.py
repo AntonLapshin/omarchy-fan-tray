@@ -31,6 +31,51 @@ ICON_OK = os.path.join(HERE, "icons", "fan-ok.png")
 ICON_FAIL = os.path.join(HERE, "icons", "fan-fail.png")
 ICON_ALERT = os.path.join(HERE, "icons", "fan-alert.png")
 
+# Theme-installed names (preferred: resolves reliably in the quickshell
+# SystemTray; absolute file paths are the fallback).
+THEME_DIR = os.path.expanduser("~/.local/share/icons/hicolor/64x64/apps")
+THEME_BASE = os.path.expanduser("~/.local/share/icons")
+THEME_NAMES = {
+    "ok": "omarchy-fan-ok",
+    "fail": "omarchy-fan-fail",
+    "alert": "omarchy-fan-alert",
+}
+THEME_FILES = {
+    "ok": ("fan-ok.png", "omarchy-fan-ok.png"),
+    "fail": ("fan-fail.png", "omarchy-fan-fail.png"),
+    "alert": ("fan-alert.png", "omarchy-fan-alert.png"),
+}
+
+
+def ensure_theme_icons() -> dict[str, str]:
+    """Copy icons into the hicolor theme so the tray resolves them by name.
+
+    Returns {state: icon_ref} where icon_ref is a theme name on success,
+    else the absolute PNG path fallback.
+    """
+    refs = {"ok": ICON_OK, "fail": ICON_FAIL, "alert": ICON_ALERT}
+    try:
+        os.makedirs(THEME_DIR, exist_ok=True)
+        import shutil as _shutil
+
+        for state, (src_name, dst_name) in THEME_FILES.items():
+            src = os.path.join(HERE, "icons", src_name)
+            dst = os.path.join(THEME_DIR, dst_name)
+            if os.path.exists(src) and (
+                not os.path.exists(dst)
+                or os.path.getsize(src) != os.path.getsize(dst)
+            ):
+                _shutil.copyfile(src, dst)
+        # all three present -> use theme names
+        if all(
+            os.path.exists(os.path.join(THEME_DIR, dst))
+            for _, dst in THEME_FILES.values()
+        ):
+            return {s: THEME_NAMES[s] for s in THEME_NAMES}
+    except Exception:
+        pass
+    return refs
+
 # Matches `sensors` fan lines, e.g.:
 #   fan1:        1993 RPM
 #   CPU Fan:                 1993 RPM
@@ -157,11 +202,18 @@ def run_tray(args) -> int:
         "error": None,
     }
 
+    icons = ensure_theme_icons()
+
     indicator = AppIndicator.Indicator.new(
-        APP_ID, ICON_OK, AppIndicator.IndicatorCategory.HARDWARE
+        APP_ID, icons["ok"], AppIndicator.IndicatorCategory.HARDWARE
     )
     indicator.set_status(AppIndicator.IndicatorStatus.ACTIVE)
     indicator.set_title(APP_TITLE)
+    try:
+        # Lets the shell resolve the icon names above via the hicolor theme.
+        indicator.set_icon_theme_path(THEME_BASE)
+    except Exception:
+        pass
 
     menu = Gtk.Menu()
 
@@ -198,13 +250,13 @@ def run_tray(args) -> int:
     def apply_state():
         fans, failed, error = state["fans"], state["failed"], state["error"]
         if error or not fans:
-            icon = ICON_FAIL if state["flash_on"] else ICON_ALERT
+            icon = icons["fail"] if state["flash_on"] else icons["alert"]
             indicator.set_icon_full(icon, "no fan data")
         elif failed:
-            icon = ICON_FAIL if state["flash_on"] else ICON_ALERT
+            icon = icons["fail"] if state["flash_on"] else icons["alert"]
             indicator.set_icon_full(icon, "fan failure")
         else:
-            indicator.set_icon_full(ICON_OK, "fans ok")
+            indicator.set_icon_full(icons["ok"], "fans ok")
         try:
             tip = tooltip_text(fans, failed, args.threshold)
             # Title feeds the StatusNotifier tooltip shown by omarchy.tray.
