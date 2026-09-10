@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Omarchy fan tray monitor.
 
-Shows a FAN icon in the top tray (Omarchy StatusNotifier tray):
-  - BLUE icon  -> all fans >= threshold (healthy)
-  - RED icon (flashing red/yellow) -> any fan below threshold / stopped / unreadable
+Shows a "fan" text icon in the top tray (Omarchy StatusNotifier tray):
+  - GRAY text  -> all fans >= threshold (healthy, matches tray icon tone)
+  - RED/YELLOW flashing text -> any fan below threshold / stopped / unreadable
 
 RPM for every fan (parsed from `sensors`) is shown in the tooltip and the
 right-click menu. A critical desktop notification fires on OK -> FAIL
@@ -325,9 +325,31 @@ def run_tray(args) -> int:
     return 0
 
 
+def acquire_single_instance_lock():
+    """Exit quietly if another tray instance is already running.
+
+    Prevents duplicate tray icons when more than one launcher fires
+    (e.g. systemd service + XDG autostart). Uses an abstract-free lock
+    file; the FD is kept open for the process lifetime.
+    Returns the lock file object, or None if already locked.
+    """
+    import fcntl
+
+    os.makedirs(os.path.expanduser("~/.cache"), exist_ok=True)
+    lock_path = os.path.expanduser("~/.cache/omarchy-fan-tray.lock")
+    fh = open(lock_path, "w")
+    try:
+        fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        return None
+    fh.write(str(os.getpid()))
+    fh.flush()
+    return fh
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(
-        description="FAN tray monitor: blue when all fans OK, flashing red when any fan is below threshold."
+        description="'fan' tray monitor: gray when all fans OK, flashing red/yellow when any fan is below threshold."
     )
     p.add_argument("--threshold", type=int, default=500,
                    help="RPM below which a fan counts as failed (default: 500)")
@@ -361,6 +383,10 @@ def main(argv=None) -> int:
         if not os.path.exists(icon):
             print(f"error: missing icon {icon}", file=sys.stderr)
             return 2
+    lock = acquire_single_instance_lock()
+    if lock is None:
+        print("another fan_tray instance is already running, exiting", file=sys.stderr)
+        return 0
     return run_tray(args)
 
 

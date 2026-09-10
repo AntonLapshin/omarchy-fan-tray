@@ -1,5 +1,5 @@
 [Unit]
-Description=Omarchy fan tray monitor (blue OK / flashing red on failure)
+Description=Omarchy fan tray monitor (gray OK / flashing red-yellow on failure)
 After=graphical-session.target
 PartOf=graphical-session.target
 

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Install the fan tray monitor on Omarchy (Hyprland + quickshell tray).
-# Installs: system deps, autostart entry, systemd user service.
+# Single autostart mechanism: systemd user service (the app itself also
+# refuses to run twice via a lock file, so duplicates are impossible).
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 SERVICE_SRC="$REPO_DIR/omarchy-fan-tray.service"
 SERVICE_DST="$HOME/.config/systemd/user/omarchy-fan-tray.service"
-DESKTOP_SRC="$REPO_DIR/fan-tray.desktop"
 AUTOSTART_DST="$HOME/.config/autostart/fan-tray.desktop"
 
 echo "==> Checking dependencies (python3, gi, AyatanaAppIndicator3, sensors)..."
@@ -33,9 +33,8 @@ systemctl --user daemon-reload
 systemctl --user enable --now omarchy-fan-tray.service
 systemctl --user status omarchy-fan-tray.service --no-pager -l | head -n 15 || true
 
-echo "==> Installing XDG autostart fallback..."
-mkdir -p "$HOME/.config/autostart"
-sed "s|/home/aurora/ws/omarchy-fan-tray|$REPO_DIR|" "$DESKTOP_SRC" > "$AUTOSTART_DST"
+echo "==> Removing legacy XDG autostart entry (systemd is the only launcher now)..."
+rm -f "$AUTOSTART_DST"
 
 echo "==> Pinning FAN icon so it is always visible (not in the hover drawer)..."
 python3 - <<'PY' || echo "warning: could not pin tray item — right-click the tray chevron and pin omarchy-fan-tray manually"
@@ -50,6 +49,6 @@ print("tray pinned")
 PY
 
 echo ""
-echo "Done. A blue FAN icon should appear in the top tray (hover for RPMs)."
+echo "Done. A gray 'fan' label should appear in the top tray (hover for RPMs)."
 echo "Test failure path with: $REPO_DIR/fan_tray.py --threshold 99999 --interval 2"
 echo "Logs: journalctl --user -u omarchy-fan-tray.service -f"

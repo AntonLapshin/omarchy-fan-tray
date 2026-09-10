@@ -2,8 +2,8 @@
 
 FAN monitor for the Omarchy top tray (Hyprland + quickshell `omarchy.tray`, which shows StatusNotifier / AppIndicator items).
 
-- **Blue `FAN` icon** — every fan from `sensors` is at or above the threshold.
-- **Flashing red/yellow `FAN` icon + critical notification** — any fan is below the threshold, reads 0 RPM (e.g. fans not spinning back up after hibernate), or `sensors` gives no fan data.
+- **Gray `fan` text** — every fan from `sensors` is at or above the threshold (matches the tone of the bluetooth/wifi/sound tray icons).
+- **Flashing red/yellow `fan` text + critical notification** — any fan is below the threshold, reads 0 RPM (e.g. fans not spinning back up after hibernate), or `sensors` gives no fan data.
 - **RPM for every fan** — hover the icon for the tooltip, or right-click for the menu listing each fan.
 
 Built for the case where hibernate/resume leaves fans stopped and the CPU overheats — one glance at the top bar tells you.
@@ -50,8 +50,9 @@ Options: `--threshold RPM` (default 500), `--interval SEC` (default 2),
 ./install.sh
 ```
 
-This enables a systemd user service (`omarchy-fan-tray.service`) plus an
-XDG autostart fallback (`~/.config/autostart/fan-tray.desktop`).
+This enables a systemd user service (`omarchy-fan-tray.service`) — the single
+launcher on login (the app additionally refuses to start a second instance,
+so duplicate tray icons are impossible).
 
 ```bash
 journalctl --user -u omarchy-fan-tray.service -f   # logs
@@ -71,11 +72,10 @@ then right-click the tray → pin `omarchy-fan-tray` so the FAN icon is always v
 | File | Purpose |
 |---|---|
 | `fan_tray.py` | Monitor (sensors parsing + AppIndicator tray) |
-| `icons/fan-ok.png` | Blue FAN (healthy) |
-| `icons/fan-fail.png` | Red FAN (failure frame 1) |
-| `icons/fan-alert.png` | Yellow FAN (failure frame 2, flashing) |
+| `icons/fan-ok.png` | Gray `fan` text (healthy) |
+| `icons/fan-fail.png` | Red `fan` text (failure frame 1) |
+| `icons/fan-alert.png` | Yellow `fan` text (failure frame 2, flashing) |
 | `omarchy-fan-tray.service` | systemd user unit template |
-| `fan-tray.desktop` | XDG autostart template |
 | `install.sh` | Installer |
 
 ## License

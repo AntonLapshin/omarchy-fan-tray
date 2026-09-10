@@ -1,9 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Fan Tray Monitor
-Comment=Blue FAN when all fans OK, flashing red when any fan is below threshold
-Exec=/home/aurora/ws/omarchy-fan-tray/fan_tray.py --threshold 500 --interval 2
-Icon=/home/aurora/ws/omarchy-fan-tray/icons/fan-ok.png
-Terminal=false
-Categories=System;Monitor;
-X-GNOME-Autostart-enabled=true
