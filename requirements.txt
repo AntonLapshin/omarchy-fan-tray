@@ -1,0 +1,5 @@
+# System packages (Arch / Omarchy). PyGObject comes from pacman, not pip.
+python-gobject
+libayatana-appindicator
+lm_sensors
+libnotify
